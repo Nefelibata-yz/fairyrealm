@@ -4,8 +4,19 @@
     "compatibility_flags": [
         "nodejs_compat"
     ],
-    "pages_build_output_dir": ".vercel/output/static",
+    "main": ".open-next/worker.js",
+    "assets": {
+        "directory": ".open-next/assets",
+        "binding": "ASSETS"
+    },
     "ai": {
         "binding": "AI"
-    }
+    },
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "fairyrealm-db",
+            "database_id": "dba1f550-621b-4a16-9557-cb5856426051"
+        }
+    ]
 }

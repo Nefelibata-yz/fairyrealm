@@ -7,6 +7,10 @@ interface AiBinding {
     run: (model: string, options: { messages: unknown[] }) => Promise<unknown>;
 }
 
+import { getBook } from "./lib/db";
+
+// ... existing code ...
+
 export async function submitMessage(bookId: string, message: string, history: { role: string; content: string }[] = []) {
     try {
         const { env } = await getCloudflareContext();
@@ -16,9 +20,16 @@ export async function submitMessage(bookId: string, message: string, history: { 
             throw new Error('Cloudflare AI binding not found');
         }
 
-        const systemPrompt = `You are a helpful literary assistant. You are discussing the book with ID "${bookId}". 
-    Reference the book's content, themes, and characters in your response. 
-    Keep your responses concise and engaging.`;
+        const book = await getBook(bookId);
+        const bookContext = book
+            ? `Title: "${book.title}"\nAuthor: "${book.author}"\nDescription: "${book.description}"`
+            : `Book ID: "${bookId}"`;
+
+        const systemPrompt = `You are a helpful literary assistant. You are discussing the following book:
+${bookContext}
+
+Reference the book's content, themes, and characters in your response. 
+Keep your responses concise and engaging.`;
 
         const messages = [
             { role: 'system', content: systemPrompt },
