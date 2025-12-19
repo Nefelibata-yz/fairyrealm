@@ -6,6 +6,6 @@
     "types": "./index.ts",
     "devDependencies": {
         "typescript": "^5.0.0",
-        "@fairyrealm/shared": "workspace:*"
+        "@fairyrealm/shared": "*"
     }
 }

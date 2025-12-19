@@ -9,7 +9,7 @@
     "dependencies": {
         "hono": "^4.0.0",
         "@cloudflare/workers-types": "^4.0.0",
-        "@fairyrealm/shared": "workspace:*",
-        "@fairyrealm/prompts": "workspace:*"
+        "@fairyrealm/shared": "*",
+        "@fairyrealm/prompts": "*"
     }
 }
