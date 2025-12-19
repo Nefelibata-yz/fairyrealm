@@ -2224,27 +2224,40 @@ __name(assemblePrompt, "assemblePrompt");
 
 // src/db.ts
 async function getBookChunks(db, bookId, query) {
-  const stmt = db.prepare("SELECT * FROM book_chunks WHERE book_id = ? AND content LIKE ? LIMIT 3");
-  const { results } = await db.prepare("SELECT * FROM book_chunks WHERE book_id = ? LIMIT 3").bind(bookId).all();
-  return results || [];
+  const { results } = await db.prepare(
+    "SELECT * FROM book_chunks WHERE book_id = ? LIMIT 5"
+  ).bind(bookId).all();
+  return results;
 }
 __name(getBookChunks, "getBookChunks");
 async function createConversation(db, userId, bookId) {
   const id = crypto.randomUUID();
   const now = Date.now();
-  await db.prepare("INSERT INTO conversations (id, user_id, book_id, created_at) VALUES (?, ?, ?, ?)").bind(id, userId, bookId, now).run();
+  await db.prepare(
+    "INSERT OR IGNORE INTO users (id, email, created_at) VALUES (?, ?, ?)"
+  ).bind(userId, "demo@example.com", now).run();
+  await db.prepare(
+    "INSERT INTO conversations (id, user_id, book_id, created_at) VALUES (?, ?, ?, ?)"
+  ).bind(id, userId, bookId, now).run();
   return id;
 }
 __name(createConversation, "createConversation");
 async function addMessage(db, conversationId, role, content, feedbackJson) {
   const id = crypto.randomUUID();
   const now = Date.now();
-  await db.prepare("INSERT INTO messages (id, conversation_id, role, content, feedback_json, created_at) VALUES (?, ?, ?, ?, ?, ?)").bind(id, conversationId, role, content, feedbackJson || null, now).run();
+  await db.prepare(
+    "INSERT INTO messages (id, conversation_id, role, content, feedback, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+  ).bind(id, conversationId, role, content, feedbackJson || null, now).run();
 }
 __name(addMessage, "addMessage");
 async function getConversationHistory(db, conversationId) {
-  const { results } = await db.prepare("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC").bind(conversationId).all();
-  return results || [];
+  const { results } = await db.prepare(
+    "SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC"
+  ).bind(conversationId).all();
+  return results.map((m) => ({
+    ...m,
+    feedback: m.feedback ? JSON.parse(m.feedback) : void 0
+  }));
 }
 __name(getConversationHistory, "getConversationHistory");
 
@@ -2254,10 +2267,20 @@ app.use("*", cors());
 app.get("/", (c) => {
   return c.text("FairyRealm Worker is running!");
 });
+app.get("/api/books", async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare("SELECT id, title FROM books").all();
+    return c.json(results || []);
+  } catch (e) {
+    console.error("Failed to get books:", e);
+    return c.json({ error: e.message }, 500);
+  }
+});
 app.post("/api/chat", async (c) => {
   try {
     const body = await c.req.json();
     const { userId, bookId, message, conversationId: existingConvId } = body;
+    console.log("[Chat] Request:", { userId, bookId, message, existingConvId });
     if (!userId || !bookId || !message) {
       return c.json({ error: "Missing required fields" }, 400);
     }
@@ -2266,28 +2289,37 @@ app.post("/api/chat", async (c) => {
       conversationId = await createConversation(c.env.DB, userId, bookId);
     }
     await addMessage(c.env.DB, conversationId, "user", message);
-    const chunks = await getBookChunks(c.env.DB, bookId, message);
-    const bookContext = chunks.map((ch) => ch.content).join("\n\n");
+    let bookContext = "";
+    try {
+      const chunks = await getBookChunks(c.env.DB, bookId, message);
+      bookContext = chunks.map((ch) => ch.content).join("\n\n");
+      console.log("[Chat] Context found:", chunks.length, "chunks");
+    } catch (e) {
+      console.error("[Chat] RAG Error:", e);
+      bookContext = "Context retrieval failed.";
+    }
     const historyMessages = await getConversationHistory(c.env.DB, conversationId);
     const historyStrings = historyMessages.map((m) => `${m.role.toUpperCase()}: ${m.content}`);
     const prompt = assemblePrompt(bookContext || "No specific book context found.", historyStrings, message);
-    const response = await c.env.AI.run("@cf/meta/llama-3-8b-instruct", {
-      messages: [
-        { role: "system", content: "You are a helpful assistant that outputs JSON." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" }
-    });
+    console.log("[Chat] Calling AI...");
     let aiJson;
     try {
+      const response = await c.env.AI.run("@cf/meta/llama-3-8b-instruct", {
+        messages: [
+          { role: "system", content: "You are a helpful assistant that outputs JSON." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
+      console.log("[Chat] AI Response raw:", response);
       let raw2 = response.response || response;
       if (typeof raw2 !== "string") raw2 = JSON.stringify(raw2);
       raw2 = raw2.replace(/```json/g, "").replace(/```/g, "").trim();
       aiJson = JSON.parse(raw2);
     } catch (e) {
-      console.error("Failed to parse AI JSON", e, response);
+      console.error("[Chat] AI Failed:", e);
       aiJson = {
-        reply: "I'm sorry, I had trouble processing that. Could you try again?",
+        reply: "I'm having trouble connecting to my brain right now. Please try again.",
         feedback: { grammar: "", vocabulary: "", encouragement: "" },
         requireRewrite: false
       };
@@ -2301,7 +2333,7 @@ app.post("/api/chat", async (c) => {
     };
     return c.json(result);
   } catch (err) {
-    console.error(err);
+    console.error("[Chat] Critical Error:", err);
     return c.json({ error: err.message }, 500);
   }
 });

@@ -3,21 +3,32 @@
 import { useState, useEffect } from 'react';
 import { ChatResponse, Feedback } from '@fairyrealm/shared';
 
-// Hardcoded for MVP
-const BOOKS = [
-    { id: 'book-1', title: 'The Little Prince' },
-    { id: 'book-2', title: 'Harry Potter' },
-];
+// Hardcoded fallback for MVP if API fails initially (removed in favor of state)
+// const BOOKS = ...
 
 const WORKER_URL = 'http://localhost:8787';
 
 export default function Home() {
-    const [selectedBook, setSelectedBook] = useState(BOOKS[0].id);
+    const [books, setBooks] = useState<any[]>([]);
+    const [selectedBook, setSelectedBook] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [conversationId, setConversationId] = useState<string | undefined>(undefined);
     const [userId] = useState('user-demo-' + Math.random().toString(36).substring(7)); // Demo user
+
+    useEffect(() => {
+        fetch(`${WORKER_URL}/api/books`)
+            .then(res => res.json())
+            .then((data: any) => {
+                console.log('Fetched books:', data);
+                if (Array.isArray(data)) {
+                    setBooks(data);
+                    if (data.length > 0) setSelectedBook(data[0].id);
+                }
+            })
+            .catch(err => console.error('Failed to fetch books:', err));
+    }, []);
 
     const sendMessage = async () => {
         if (!input.trim() || loading) return;
@@ -67,7 +78,11 @@ export default function Home() {
                 <div className="book-selector">
                     <label>Choose a Book: </label>
                     <select value={selectedBook} onChange={(e) => setSelectedBook(e.target.value)}>
-                        {BOOKS.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+                        {books.length > 0 ? (
+                            books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)
+                        ) : (
+                            <option>Loading books...</option>
+                        )}
                     </select>
                 </div>
             </header>
