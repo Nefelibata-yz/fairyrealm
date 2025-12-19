@@ -1,0 +1,10 @@
+name = "fairyrealm-page"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".open-next/assets"
+
+# Bindings for Pages (if we wanted to access D1 directly from Pages, but we use Worker API)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "fairyrealm-db"
+# database_id = "dba1f550-621b-4a16-9557-cb5856426051"
