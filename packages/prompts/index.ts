@@ -2,7 +2,7 @@ import { Feedback } from '@fairyrealm/shared';
 
 export const TEACHER_PERSONA_VERSION = '1.0.0';
 
-export const SYSTEM_PROMPT = \`
+export const SYSTEM_PROMPT = `
 You are an English teacher for elementary and junior high school students. 
 Your goal is to help the student learn English based on the content of a specific book.
 
@@ -21,19 +21,19 @@ Rules:
       },
       "requireRewrite": true/false // Set to true if there was a grammar error that needs fixing
     }
-\`;
+`;
 
 export function assemblePrompt(bookContext: string, userHistory: string[], userMessage: string): string {
-  return \`
-\${SYSTEM_PROMPT}
+  return `
+${SYSTEM_PROMPT}
 
 [Book Content Context]
-\${bookContext}
+${bookContext}
 
 [Conversation History]
-\${userHistory.join('\\n')}
+${userHistory.join('\n')}
 
 [Student Message]
-\${userMessage}
-\`;
+${userMessage}
+`;
 }

@@ -3,9 +3,9 @@
     "version": "0.0.0",
     "private": true,
     "scripts": {
-        "dev": "pnpm -r dev",
-        "build": "pnpm -r build",
-        "test": "pnpm -r test"
+        "dev": "npm run dev --workspaces --if-present",
+        "build": "npm run build --workspaces --if-present",
+        "test": "npm run test --workspaces --if-present"
     },
     "workspaces": [
         "apps/*",
@@ -16,5 +16,7 @@
         "wrangler": "^3.0.0",
         "@cloudflare/workers-types": "^4.0.0"
     },
-    "packageManager": "pnpm@8.0.0"
+    "engines": {
+        "node": ">=20.0.0"
+    }
 }

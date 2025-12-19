@@ -9,7 +9,7 @@ compatibility_date = "2023-12-01"
 binding = "DB"
 database_name = "fairyrealm-db"
 database_id = "dba1f550-621b-4a16-9557-cb5856426051"
-preview_database_id = "INSERT_YOUR_PREVIEW_DB_ID_HERE" # Optional
+preview_database_id = "dba1f550-621b-4a16-9557-cb5856426051" # Optional
 
 [ai]
 binding = "AI"

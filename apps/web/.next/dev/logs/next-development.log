@@ -1,5 +1,2 @@
-[00:00:00.420] Server  LOG     ✓ Ready in 266ms
-[00:00:04.555] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:14.556] Browser ERROR   Fetch request failed: {}
-[00:00:14.556] Browser ERROR   {}
-[00:15:28.613] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:00.265] Server  LOG     ✓ Ready in 168ms
+[00:00:05.068] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
