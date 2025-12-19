@@ -7,19 +7,22 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "pages:build": "pnpm next-on-pages"
+        "pages:build": "opennextjs-cloudflare",
+        "preview": "npm run pages:build && wrangler pages dev .open-next/assets",
+        "deploy": "npm run pages:build && wrangler pages deploy .open-next/assets"
     },
     "dependencies": {
-        "next": "latest",
+        "next": "14.2.14",
         "react": "^18.0.0",
         "react-dom": "^18.0.0",
+        "@opennextjs/cloudflare": "^0.3.5",
         "@fairyrealm/shared": "*"
     },
     "devDependencies": {
-        "@cloudflare/next-on-pages": "^1.0.0",
         "@types/node": "^20.0.0",
         "@types/react": "^18.0.0",
         "@types/react-dom": "^18.0.0",
-        "typescript": "^5.0.0"
+        "typescript": "^5.0.0",
+        "wrangler": "^3.0.0"
     }
 }
