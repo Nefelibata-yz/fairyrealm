@@ -12,17 +12,17 @@
         "deploy": "npm run pages:build && wrangler pages deploy .open-next/assets"
     },
     "dependencies": {
-        "next": "14.2.14",
+        "@fairyrealm/shared": "*",
+        "@opennextjs/cloudflare": "^1.14.7",
+        "next": "^14.2.35",
         "react": "^18.0.0",
-        "react-dom": "^18.0.0",
-        "@opennextjs/cloudflare": "^0.3.5",
-        "@fairyrealm/shared": "*"
+        "react-dom": "^18.0.0"
     },
     "devDependencies": {
         "@types/node": "^20.0.0",
         "@types/react": "^18.0.0",
         "@types/react-dom": "^18.0.0",
         "typescript": "^5.0.0",
-        "wrangler": "^3.0.0"
+        "wrangler": "^4.56.0"
     }
 }
