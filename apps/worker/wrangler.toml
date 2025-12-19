@@ -1,0 +1,14 @@
+name = "fairyrealm-worker"
+compatibility_date = "2023-12-01"
+
+[vars]
+# Environment variables
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fairyrealm-db"
+database_id = "dba1f550-621b-4a16-9557-cb5856426051"
+preview_database_id = "INSERT_YOUR_PREVIEW_DB_ID_HERE" # Optional
+
+[ai]
+binding = "AI"
