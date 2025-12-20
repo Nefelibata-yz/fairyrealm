@@ -9,7 +9,15 @@ import { ChatResponse, Feedback } from '@fairyrealm/shared';
 // 动态获取 API 地址 (Dynamic API URL)
 // 在生产环境 (Cloudflare Pages) 中应该通过环境变量 NEXT_PUBLIC_API_URL 配置
 // 如果未配置，则默认为 localhost (仅用于本地开发)
-const WORKER_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
+const getWorkerUrl = () => {
+    let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
+    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+        url = `https://${url}`;
+    }
+    return url;
+};
+
+const WORKER_URL = getWorkerUrl();
 
 export default function Home() {
     const [books, setBooks] = useState<any[]>([]);

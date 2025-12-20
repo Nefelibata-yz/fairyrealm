@@ -1,64 +1,62 @@
-# FairyRealm 🧚
+# FairyRealm 🧚 - AI English Learning Assistant
 
-FairyRealm 是一个面向小学生和初中生的英语学习 SaaS 产品。用户选择一本书，AI 老师（基于 Cloudflare Workers AI）会根据书本内容与学生对话，并即时纠正语法错误。
+FairyRealm 是一款专为中小学生设计的沉浸式英语学习 SaaS 产品。通过与 AI 老师进行基于书籍内容的实时对话，学生可以在真实的语境中提升英语能力，并获得即时的语法纠正和专业建议。
 
-**本项目已完整配置为 Cloudflare Edge 架构，并使用 `@opennextjs/cloudflare` 进行 Pages 部署。**
+## ✨ 核心特性
 
-## ⚠️ 关键部署说明 (必读)
+-   **沉浸式学习**: 基于经典书籍内容进行对话，告别枯燥的单词记忆。
+-   **AI 即时反馈**: 基于 Cloudflare Workers AI，提供精准的语法、词汇反馈和鼓励。
+-   **Edge 原生架构**: 运行在 Cloudflare 全球边缘网络，极致响应速度。
+-   **自适应设计**: 完美适配桌面端与移动端设备。
+-   **灵活认证**: 支持游客试用模式和正式学徒账号。
 
-1.  **包管理器**: 本项目 **强制使用 npm**。千万不要使用 pnpm。
-2.  **Node.js 版本**: 要求 Node.js 20 或更​​高版本。
-3.  **构建命令 (Cloudflare Pages)**:
-    *   Command: `npm run pages:build`
-    *   Output Directory: `.open-next/assets`
-4.  **构建命令 (Workers)**: `npm run build`
+## 🛠 技术栈
 
-## 快速开始 (本地开发)
+-   **Frontend**: Next.js 14 (App Router), CSS Modules
+-   **Backend**: Cloudflare Workers
+-   **Database**: Cloudflare D1 (SQL Database)
+-   **AI**: Cloudflare Workers AI (@cf/meta/llama-3-8b-instruct)
+-   **Deployment**: Cloudflare Pages & Workers
 
-### 1. 安装
+## 🚀 快速开始
 
+### 1. 环境准备
+- Node.js 20+
+- Cloudflare 账号 (用于 AI 和 D1)
+
+### 2. 开发环境配置
 ```bash
+# 安装依赖 (强制使用 npm)
 npm install
-```
 
-### 2. 初始化数据库
+# 登录 Cloudflare (本地调用 AI 环境必需)
+npx wrangler login
 
-**本地开发:**
-```bash
+# 初始化本地数据库
 cd apps/worker
 npx wrangler d1 execute fairyrealm-db --local --file=../../migrations/0000_initial.sql
 npx wrangler d1 execute fairyrealm-db --local --file=../../scripts/seed.sql
 ```
 
-**远程部署 (同步数据到生产环境):**
-需配置 `apps/worker/wrangler.toml` 中的 `database_id`。
+### 3. 启动项目
+在根目录下运行：
 ```bash
-cd apps/worker
-npx wrangler d1 execute fairyrealm-db --remote --file=../../migrations/0000_initial.sql
-npx wrangler d1 execute fairyrealm-db --remote --file=../../scripts/seed.sql
-```
-
-### 3. 连接 AI (本地必需)
-
-由于 Workers AI 需要使用 Cloudflare 的 GPU 资源，本地开发时你需要登录 Cloudflare 账号：
-
-```bash
-npx wrangler login
-```
-
-登录后，`wrangler dev` 会自动通过网络调用你的 Cloudflare AI 绑定。
-
-### 4. 启动项目
-
-```bash
-# 在根目录运行，同时启动 Frontend (3000) 和 Backend (8787)
 npm run dev
 ```
+- 前端：`http://localhost:3000`
+- 后端：`http://localhost:8787`
 
-## Cloudflare Pages 配置指南
+## 🌍 部署说明
 
-*   **Build command**: `npm run pages:build`
-*   **Build output directory**: `.open-next/assets`
-*   **Root directory**: `apps/web`
-*   **Environment Variables**:
-    *   `NODE_VERSION`: `20.10.0`
+### 环境变量配置
+在 Cloudflare Pages 设置中配置以下变量：
+- `NEXT_PUBLIC_API_URL`: 后端 API 地址 (例如 `https://api.fairyrealm.xyz`)
+- `NODE_VERSION`: `20.10.0`
+
+### 构建配置
+- **Build Command**: `npm run pages:build`
+- **Output Directory**: `.open-next/assets`
+- **Root Directory**: `apps/web`
+
+---
+Copyright © 2025 FairyRealm Team. Built with ❤️ on Cloudflare.
