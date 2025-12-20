@@ -1,4 +1,4 @@
-// File: /Users/m4/Downloads/Y/Github/fairyrealm/apps/web/src/app/layout.tsx
+// File: /Users/m4/Downloads/Y/Github/fairyrealm 0.22.00/apps/web/src/app/layout.tsx
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
