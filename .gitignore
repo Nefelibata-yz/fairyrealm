@@ -1,1 +1,7 @@
 node_modules
+.next
+.open-next
+.wrangler
+.env*.local
+dist
+.DS_Store
