@@ -8,6 +8,7 @@
         "start": "next start",
         "lint": "next lint",
         "pages:build": "opennextjs-cloudflare",
+        "pages:build-cf": "opennextjs-cloudflare build && cp -r .open-next/cloudflare .open-next/assets/ && cp -r .open-next/server-functions .open-next/assets/ && cp -r .open-next/.build .open-next/assets/ && cp -r .open-next/middleware .open-next/assets/ && cp .open-next/worker.js .open-next/assets/_worker.js",
         "preview": "npm run pages:build && wrangler pages dev .open-next/assets",
         "deploy": "npm run pages:build && wrangler pages deploy .open-next/assets"
     },
