@@ -11,6 +11,8 @@ type Bindings = {
     JWT_SECRET: string;
 };
 
+const MAX_GUEST_MESSAGES = 5;
+
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.use('*', cors());
@@ -80,10 +82,10 @@ app.get('/api/books', async (c) => {
 app.post('/api/auth/register', async (c) => {
     try {
         const { email, password } = await c.req.json();
-        if (!email || !password) return c.json({ error: 'Email and password required' }, 400);
+        if (!email || !password) return c.json({ error: '请填写邮箱和密码' }, 400);
 
         const existing = await getUserByEmail(c.env.DB, email);
-        if (existing) return c.json({ error: 'User already exists' }, 400);
+        if (existing) return c.json({ error: '该邮箱已被注册' }, 400);
 
         const passwordHash = await hashPassword(password);
         const userId = await createUser(c.env.DB, email, passwordHash);
@@ -102,7 +104,7 @@ app.post('/api/auth/login', async (c) => {
         const user = await getUserByEmail(c.env.DB, email);
 
         if (!user || !(await verifyPassword(password, user.password_hash))) {
-            return c.json({ error: 'Invalid credentials' }, 401);
+            return c.json({ error: '邮箱或密码错误' }, 401);
         }
 
         const token = await signJWT({ userId: user.id }, c.env.JWT_SECRET);
@@ -134,16 +136,18 @@ app.post('/api/chat', async (c) => {
 
         // 如果是游客，使用前端传来的 guestId 作为临时 ID
         if (isGuest) {
-            if (!guestId) return c.json({ error: 'Guest ID required for anonymous chat' }, 400);
+            if (!guestId) return c.json({ error: '游客模式需要提供 Guest ID' }, 400);
             userId = guestId;
 
             // 2. 游客频率限制 (Guest Message Limit)
             const count = await getGuestMessageCount(c.env.DB, guestId);
-            if (count >= 5) {
+            if (count >= MAX_GUEST_MESSAGES) {
                 return c.json({
-                    error: 'Limit reached',
-                    reply: '您已达到游客对话限制（5条）。请登录以继续无限对话并保存历史记录！ 🧚',
-                    limitReached: true
+                    error: '已达到试用上限',
+                    reply: `您已达到游客对话限制（${MAX_GUEST_MESSAGES}条）。请登录以继续无限对话并保存历史记录！ 🧚`,
+                    limitReached: true,
+                    remainingMessages: 0,
+                    maxMessages: MAX_GUEST_MESSAGES
                 }, 403);
             }
         }
@@ -151,7 +155,7 @@ app.post('/api/chat', async (c) => {
         console.log('[Chat] Request:', { userId, isGuest, bookId, message, existingConvId });
 
         if (!userId || !bookId || !message) {
-            return c.json({ error: 'Missing required fields' }, 400);
+            return c.json({ error: '缺少必要参数' }, 400);
         }
 
         // 3. 获取或创建对话 (Get or Create Conversation)
@@ -228,7 +232,9 @@ app.post('/api/chat', async (c) => {
             reply: aiJson.reply,
             feedback: aiJson.feedback,
             requireRewrite: aiJson.requireRewrite,
-            conversationId
+            conversationId,
+            remainingMessages: isGuest ? MAX_GUEST_MESSAGES - (await getGuestMessageCount(c.env.DB, guestId!)) : undefined,
+            maxMessages: isGuest ? MAX_GUEST_MESSAGES : undefined
         }
 
         return c.json(result);
@@ -236,6 +242,21 @@ app.post('/api/chat', async (c) => {
     } catch (err: any) {
         console.error('[Chat] Critical Error:', err);
         return c.json({ error: err.message }, 500);
+    }
+});
+
+app.get('/api/usage', async (c) => {
+    try {
+        const guestId = c.req.query('guestId');
+        if (!guestId) return c.json({ error: 'Guest ID required' }, 400);
+
+        const count = await getGuestMessageCount(c.env.DB, guestId);
+        return c.json({
+            remainingMessages: Math.max(0, MAX_GUEST_MESSAGES - count),
+            maxMessages: MAX_GUEST_MESSAGES
+        });
+    } catch (e: any) {
+        return c.json({ error: e.message }, 500);
     }
 });
 

@@ -52,4 +52,6 @@ export interface ChatResponse {
   feedback: Feedback;
   requireRewrite: boolean;
   conversationId: string;
+  remainingMessages?: number;
+  maxMessages?: number;
 }
