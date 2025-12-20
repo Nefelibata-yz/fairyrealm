@@ -1,7 +1,7 @@
 name = "fairyrealm"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".open-next/assets"
+pages_build_output_dir = ".open-next"
 
 # Bindings for Pages (if we wanted to access D1 directly from Pages, but we use Worker API)
 # [[d1_databases]]
