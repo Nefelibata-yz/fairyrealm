@@ -107,11 +107,16 @@ app.post('/api/auth/login', async (c) => {
             return c.json({ error: '邮箱或密码错误' }, 401);
         }
 
+        if (!c.env.JWT_SECRET) {
+            console.error('[Login] Critical Error: JWT_SECRET is not defined in environment variables.');
+            return c.json({ error: '服务器配置错误：缺少安全密钥 (JWT_SECRET)。请联系管理员检查 Cloudflare Worker 环境变量。' }, 500);
+        }
+
         const token = await signJWT({ userId: user.id }, c.env.JWT_SECRET);
         return c.json({ token, userId: user.id });
     } catch (e: any) {
         console.error('[Login] Error:', e);
-        return c.json({ error: e.message }, 500);
+        return c.json({ error: e.message || '登录过程中发生错误' }, 500);
     }
 });
 
@@ -124,10 +129,14 @@ app.post('/api/chat', async (c) => {
         // 1. 身份验证 (Authentication Check)
         if (authHeader?.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
-            const payload = await verifyJWT(token, c.env.JWT_SECRET);
-            if (payload) {
-                userId = payload.userId;
-                isGuest = false;
+            if (!c.env.JWT_SECRET) {
+                console.error('[Chat] Warning: JWT_SECRET is not defined, cannot verify token.');
+            } else {
+                const payload = await verifyJWT(token, c.env.JWT_SECRET);
+                if (payload) {
+                    userId = payload.userId;
+                    isGuest = false;
+                }
             }
         }
 

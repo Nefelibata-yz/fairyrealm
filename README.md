@@ -50,7 +50,7 @@ npm run dev
 
 ### 环境变量配置
 在 Cloudflare Pages 设置中配置以下变量：
-- `NEXT_PUBLIC_API_URL`: 后端 API 地址 (例如 `https://api.fairyrealm.xyz`)
+- `NEXT_PUBLIC_API_URL`: 后端 API 地址 (例如 `https://api.fairy***.xyz`)
 - `NODE_VERSION`: `20.10.0`
 
 ### 构建配置
