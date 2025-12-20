@@ -12,15 +12,44 @@ export async function getBookChunks(db: D1Database, bookId: string, query: strin
 }
 
 // 创建新的对话会话
-export async function createConversation(db: D1Database, userId: string, bookId: string): Promise<string> {
+
+// 根据 Email 获取用户 (用于登录检查)
+export async function getUserByEmail(db: D1Database, email: string) {
+    return await db.prepare(
+        'SELECT * FROM users WHERE email = ? AND is_guest = 0'
+    ).bind(email).first<{ id: string, password_hash: string }>();
+}
+
+// 创建注册用户
+export async function createUser(db: D1Database, email: string, passwordHash: string): Promise<string> {
+    const id = crypto.randomUUID();
+    const now = Date.now();
+    await db.prepare(
+        'INSERT INTO users (id, email, password_hash, is_guest, created_at) VALUES (?, ?, ?, 0, ?)'
+    ).bind(id, email, passwordHash, now).run();
+    return id;
+}
+
+// 获取游客的当前消息数
+export async function getGuestMessageCount(db: D1Database, guestId: string): Promise<number> {
+    const result = await db.prepare(
+        'SELECT COUNT(*) as count FROM messages m JOIN conversations c ON m.conversation_id = c.id JOIN users u ON c.user_id = u.id WHERE u.guest_id = ? AND u.is_guest = 1'
+    ).bind(guestId).first<{ count: number }>();
+    return result?.count || 0;
+}
+
+// 修改原有的 createConversation，增加对 Guest 的支持
+export async function createConversation(db: D1Database, userId: string, bookId: string, isGuest: boolean = false): Promise<string> {
     const id = crypto.randomUUID();
     const now = Date.now();
 
-    // 确保用户存在 (解决外键约束 FOREIGN KEY constraint)
-    // 如果用户已存在则忽略
-    await db.prepare(
-        'INSERT OR IGNORE INTO users (id, email, created_at) VALUES (?, ?, ?)'
-    ).bind(userId, 'demo@example.com', now).run();
+    // 如果用户不存在，则创建一个基本记录 (兼容老逻辑，但以后主要靠注册)
+    if (isGuest) {
+        // 确保游客记录存在
+        await db.prepare(
+            'INSERT OR IGNORE INTO users (id, email, is_guest, guest_id, created_at) VALUES (?, ?, 1, ?, ?)'
+        ).bind(userId, `guest_${userId}@temp.com`, userId, now).run();
+    }
 
     // 插入新的对话记录
     await db.prepare(

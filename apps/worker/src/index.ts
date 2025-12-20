@@ -2,11 +2,13 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ChatRequest, ChatResponse, Feedback } from '@fairyrealm/shared';
 import { assemblePrompt, TEACHER_PERSONA_VERSION } from '@fairyrealm/prompts';
-import { getBookChunks, createConversation, addMessage, getConversationHistory } from './db';
+import { getBookChunks, createConversation, addMessage, getConversationHistory, getUserByEmail, createUser, getGuestMessageCount } from './db';
+import { hashPassword, verifyPassword, signJWT, verifyJWT } from './auth';
 
 type Bindings = {
     DB: D1Database;
     AI: any;
+    JWT_SECRET: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -14,7 +16,54 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use('*', cors());
 
 app.get('/', (c) => {
-    return c.text('FairyRealm Worker is running!');
+    return c.html(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>FairyRealm API 🧚</title>
+            <style>
+                body { font-family: -apple-system, sans-serif; background: #f8fafc; color: #1e293b; padding: 2rem; }
+                .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); max-width: 800px; margin: 0 auto; }
+                h1 { color: #6366f1; border-bottom: 2px solid #eef2ff; padding-bottom: 1rem; }
+                .endpoint { margin: 1.5rem 0; padding: 1rem; border-left: 4px solid #6366f1; background: #f5f3ff; }
+                code { background: #e0e7ff; padding: 0.2rem 0.4rem; border-radius: 4px; }
+                .method { font-weight: bold; color: #4338ca; display: inline-block; width: 60px; }
+                p { line-height: 1.6; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>FairyRealm API Documentation 🧚</h1>
+                <p>欢迎来到魔法王国后端接口页面。下面是当前可用的接口说明：</p>
+                
+                <div class="endpoint">
+                    <span class="method">GET</span> <code>/api/books</code>
+                    <p><strong>功能：</strong> 获取所有可用的魔法书籍列表。</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method">POST</span> <code>/api/chat</code>
+                    <p><strong>功能：</strong> 与 AI 老师对话。支持 RAG 检索和游客频率限制（5条）。</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method">POST</span> <code>/api/auth/register</code>
+                    <p><strong>功能：</strong> 注册新学徒账号。</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method">POST</span> <code>/api/auth/login</code>
+                    <p><strong>功能：</strong> 登录并获取身份令牌 (JWT)。</p>
+                </div>
+
+                <p style="margin-top:2rem; font-size: 0.9rem; color: #64748b;">
+                    Powered by Cloudflare Workers & AI ✨
+                </p>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
 app.get('/api/books', async (c) => {
@@ -27,25 +76,92 @@ app.get('/api/books', async (c) => {
     }
 });
 
+// 注册接口 (User Registration)
+app.post('/api/auth/register', async (c) => {
+    try {
+        const { email, password } = await c.req.json();
+        if (!email || !password) return c.json({ error: 'Email and password required' }, 400);
+
+        const existing = await getUserByEmail(c.env.DB, email);
+        if (existing) return c.json({ error: 'User already exists' }, 400);
+
+        const passwordHash = await hashPassword(password);
+        const userId = await createUser(c.env.DB, email, passwordHash);
+
+        return c.json({ success: true, userId });
+    } catch (e: any) {
+        console.error('[Register] Error:', e);
+        return c.json({ error: e.message }, 500);
+    }
+});
+
+// 登录接口 (User Login)
+app.post('/api/auth/login', async (c) => {
+    try {
+        const { email, password } = await c.req.json();
+        const user = await getUserByEmail(c.env.DB, email);
+
+        if (!user || !(await verifyPassword(password, user.password_hash))) {
+            return c.json({ error: 'Invalid credentials' }, 401);
+        }
+
+        const token = await signJWT({ userId: user.id }, c.env.JWT_SECRET);
+        return c.json({ token, userId: user.id });
+    } catch (e: any) {
+        console.error('[Login] Error:', e);
+        return c.json({ error: e.message }, 500);
+    }
+});
+
 app.post('/api/chat', async (c) => {
     try {
-        const body = await c.req.json<ChatRequest>();
-        const { userId, bookId, message, conversationId: existingConvId } = body;
+        const authHeader = c.req.header('Authorization');
+        let userId: string | null = null;
+        let isGuest = true;
 
-        console.log('[Chat] Request:', { userId, bookId, message, existingConvId });
+        // 1. 身份验证 (Authentication Check)
+        if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.substring(7);
+            const payload = await verifyJWT(token, c.env.JWT_SECRET);
+            if (payload) {
+                userId = payload.userId;
+                isGuest = false;
+            }
+        }
+
+        const body = await c.req.json<ChatRequest & { guestId?: string }>();
+        const { bookId, message, conversationId: existingConvId, guestId } = body;
+
+        // 如果是游客，使用前端传来的 guestId 作为临时 ID
+        if (isGuest) {
+            if (!guestId) return c.json({ error: 'Guest ID required for anonymous chat' }, 400);
+            userId = guestId;
+
+            // 2. 游客频率限制 (Guest Message Limit)
+            const count = await getGuestMessageCount(c.env.DB, guestId);
+            if (count >= 5) {
+                return c.json({
+                    error: 'Limit reached',
+                    reply: '您已达到游客对话限制（5条）。请登录以继续无限对话并保存历史记录！ 🧚',
+                    limitReached: true
+                }, 403);
+            }
+        }
+
+        console.log('[Chat] Request:', { userId, isGuest, bookId, message, existingConvId });
 
         if (!userId || !bookId || !message) {
             return c.json({ error: 'Missing required fields' }, 400);
         }
 
-        // 1. 获取或创建对话 (Get or Create Conversation)
+        // 3. 获取或创建对话 (Get or Create Conversation)
         let conversationId = existingConvId;
         if (!conversationId) {
             // 如果前端没有传 conversationId，说明是新对话。确保 User 存在并创建 Conversation。
-            conversationId = await createConversation(c.env.DB, userId, bookId);
+            conversationId = await createConversation(c.env.DB, userId, bookId, isGuest);
         }
 
-        // 2. 保存用户消息 (Save User Message)
+        // 4. 保存用户消息 (Save User Message)
         // 将用户的输入存入数据库，作为对话历史的一部分
         await addMessage(c.env.DB, conversationId, 'user', message);
 

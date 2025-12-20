@@ -33,9 +33,29 @@ header {
     border-bottom: 1px solid #e2e8f0;
 }
 
+.header-left, .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 h1 {
     margin: 0;
     color: var(--primary);
+    font-size: 1.5rem;
+}
+
+.badge-guest, .badge-user {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.badge-user {
+    background: #dcfce7;
+    color: #166534;
 }
 
 .chat-window {
