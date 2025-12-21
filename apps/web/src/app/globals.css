@@ -210,6 +210,84 @@ button:disabled {
     animation: slideUp 0.3s ease-out;
 }
 
+.guest-info {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.guest-hint-bubble {
+    font-size: 0.75rem;
+    color: #4338ca;
+    background: #eef2ff;
+    padding: 0.5rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    border: 1px dashed var(--primary);
+    line-height: 1.3;
+}
+
+/* Voice Controls */
+.voice-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.btn-icon {
+    background: none;
+    border: 1px solid #e2e8f0;
+    color: var(--text-ai);
+    padding: 0.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    width: 36px;
+    height: 36px;
+}
+
+.btn-icon:hover {
+    background: #f1f5f9;
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-icon.active {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #ef4444;
+    animation: pulse 1.5s infinite;
+}
+
+.tts-btn {
+    opacity: 0.6;
+}
+
+.message:hover .tts-btn {
+    opacity: 1;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
 @keyframes slideUp {
     from {
         opacity: 0;
@@ -354,17 +432,156 @@ button:disabled {
     }
 }
 
-@media (max-height: 600px) {
-    .auth-widget {
-        position: static;
-        margin-top: 1rem;
+/* Book Selection Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    animation: zoomIn 0.3s ease-out;
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
     }
 
-    .auth-panel.glass {
-        position: fixed;
-        bottom: 5rem;
-        left: 1rem;
-        right: 1rem;
-        width: auto;
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: var(--primary);
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1.5rem;
+}
+
+.book-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+    text-align: center;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+}
+
+.book-cover {
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: #f1f5f9;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+    margin-bottom: 0.5rem;
+    border: 2px solid transparent;
+}
+
+.book-card.selected .book-cover {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.book-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-ai);
+}
+
+.btn-close {
+    margin-top: 1.5rem;
+    width: 100%;
+    padding: 0.8rem;
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Header Adjustments */
+.btn-select-book {
+    background: white;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    padding: 0.5rem 1rem;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-select-book:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* Mobile Refinements */
+@media (max-width: 640px) {
+    .container {
+        padding: 0;
+        height: 100vh;
+    }
+
+    header {
+        padding: 1rem;
+        background: white;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .chat-window {
+        padding: 1rem;
+    }
+
+    .input-area {
+        padding: 1rem;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .auth-widget {
+        bottom: 5rem;
+        /* Space for input area */
+    }
+
+    .bubble {
+        font-size: 1rem;
+        padding: 0.8rem 1rem;
+    }
+}
+
+.active-primary {
+    background: var(--primary) !important;
+    color: white !important;
 }
